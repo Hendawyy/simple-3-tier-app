@@ -20,3 +20,21 @@ spec:
         image: hendawyy/backend:latest
         ports:
         - containerPort: 3000
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-url
+              key: BACKEND_URL
+        - name: MONGO_URI
+          valueFrom:
+            configMapKeyRef:
+              name: backend-url
+              key: MONGO_URI
+        volumeMounts:
+        - name: backend-storage
+          mountPath: /app/data 
+      volumes:
+      - name: backend-storage
+        persistentVolumeClaim:
+          claimName: my-ebs-pvc

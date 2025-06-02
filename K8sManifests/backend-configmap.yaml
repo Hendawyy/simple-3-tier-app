@@ -5,3 +5,4 @@ metadata:
   name: backend-url
 data:
   BACKEND_URL: "http://backend-service:3000/api/increment"
+  MONGO_URI: "mongodb://mongo:27017/counterdb"
