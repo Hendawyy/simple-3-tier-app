@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: hendawyy/frontend:latest
+        image: IMAGE_FRONTEND
         ports:
         - containerPort: 80
         env:
@@ -26,3 +26,4 @@ spec:
             configMapKeyRef:
               name: backend-url
               key: BACKEND_URL
+
