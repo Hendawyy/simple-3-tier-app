@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: 3-tier-app-eks
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: IMAGE_BACKEND
+        ports:
+        - containerPort: 3000
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-url
+              key: BACKEND_URL
+        - name: MONGO_URI
+          valueFrom:
+            configMapKeyRef:
+              name: backend-url
+              key: MONGO_URI
+        volumeMounts:
+        - name: backend-storage
+          mountPath: /app/data
+      volumes:
+      - name: backend-storage
+        persistentVolumeClaim:
+          claimName: my-ebs-pvc
+      nodeSelector:
+        kubernetes.io/hostname: ip-172-31-8-155.us-west-2.compute.internal
