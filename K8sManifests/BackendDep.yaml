@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: hendawyy/backend:latest
+        image: IMAGE_BACKEND
         ports:
         - containerPort: 3000
         env:
@@ -38,3 +38,4 @@ spec:
       - name: backend-storage
         persistentVolumeClaim:
           claimName: my-ebs-pvc
+
