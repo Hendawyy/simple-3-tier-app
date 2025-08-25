@@ -4,14 +4,15 @@ metadata:
   name: codebuild-deployer-role
 rules:
   - apiGroups: [""]
-    resources: ["namespaces", "configmaps", "services", "pods", "persistentvolumeclaims"]
-    verbs: ["create", "get", "list", "watch", "update", "delete"]
+    resources: ["namespaces"]
+    verbs: ["create", "get", "list", "watch"]
   - apiGroups: ["apps"]
-    resources: ["deployments", "statefulsets", "replicasets"]
-    verbs: ["create", "get", "list", "watch", "update", "delete"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
-    verbs: ["get", "list", "watch"]
+    resources: ["deployments"]
+    verbs: ["create", "update", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["services", "persistentvolumeclaims"]
+    verbs: ["create", "update", "get", "list", "watch"]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -19,7 +20,7 @@ metadata:
   name: codebuild-deployer-binding
 subjects:
   - kind: User
-    name: codebuild-deployer
+    name: arn:aws:sts::471112730982:assumed-role/codebuild-app-deploy-service-role/*
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
