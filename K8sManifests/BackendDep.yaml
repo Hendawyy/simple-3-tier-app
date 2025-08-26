@@ -6,7 +6,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: backend
@@ -40,3 +40,4 @@ spec:
           claimName: my-ebs-pvc
       nodeSelector:
         kubernetes.io/hostname: ip-172-31-8-155.us-west-2.compute.internal
+
