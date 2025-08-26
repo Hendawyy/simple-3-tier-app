@@ -6,7 +6,7 @@ provisioner: ebs.csi.aws.com
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Retain
 parameters:
-  type: gp2  # or gp3 if preferred
+  type: gp3
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
