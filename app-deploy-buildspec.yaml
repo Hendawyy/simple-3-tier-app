@@ -1,0 +1,48 @@
+version: 0.2
+
+env:
+  variables:
+    REGION: us-east-1
+    CLUSTER_NAME: EKS-Hendawy
+    CLUSTER_ARN: arn:aws:eks:us-east-1:471112730982:cluster/EKS-Hendawy
+    FRONTEND_IMAGE: 471112730982.dkr.ecr.us-east-1.amazonaws.com/hendawy/frontend
+    BACKEND_IMAGE: 471112730982.dkr.ecr.us-east-1.amazonaws.com/hendawy/backend
+    K8S_DIR: K8sManifests
+    KUBECTL_VERSION: "1.33.0"
+
+phases:
+  install:
+    commands:
+    - echo "Installing kubectl and jq..."
+    - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - chmod +x kubectl
+    - mv kubectl /usr/local/bin/
+    - kubectl version --client
+    - apt-get update
+    - apt-get install -y jq
+  pre_build:
+    commands:
+    - echo "Configuring kubeconfig for cluster $CLUSTER_NAME..."
+    - aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION
+    - echo "Reading commit SHA for image tag..."
+    - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+    - echo "Using image tag $IMAGE_TAG"
+    - kubectl config use-context ${CLUSTER_ARN}
+  build:
+    commands:
+    - echo "Replacing image placeholders in Kubernetes manifests..."
+    - sed -i "s#IMAGE_FRONTEND#${FRONTEND_IMAGE}:${IMAGE_TAG}#g" ${K8S_DIR}/FrontendDep.yaml
+    - sed -i "s#IMAGE_BACKEND#${BACKEND_IMAGE}:${IMAGE_TAG}#g" ${K8S_DIR}/BackendDep.yaml
+  post_build:
+    commands:
+    - echo "Applying Kubernetes manifests..."
+    - kubectl apply -f ${K8S_DIR}/
+    - echo "Waiting for deployments to roll out..."
+    - kubectl rollout status deployment/frontend-deployment -n 3-tier-app-eks || true
+    - kubectl rollout status deployment/backend-deployment -n 3-tier-app-eks || true
+    - echo "Deployment completed successfully."
+
+artifacts:
+  files:
+  - "**/*"
+  discard-paths: yes
