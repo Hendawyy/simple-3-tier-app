@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    REGION: us-east-1
+    ACCOUNT_ID: 471112730982
+    FRONTEND_REPO: 471112730982.dkr.ecr.us-east-1.amazonaws.com/hendawy/frontend
+    BACKEND_REPO: 471112730982.dkr.ecr.us-east-1.amazonaws.com/hendawy/backend
+    DOCKERFILE_FRONTEND: FrontEnd/Dockerfile
+    CONTEXT_FRONTEND: FrontEnd
+    DOCKERFILE_BACKEND: BackEnd/Dockerfile
+    CONTEXT_BACKEND: BackEnd
+
+phases:
+  pre_build:
+    commands:
+    - echo "Deriving image tag from commit..."
+    - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
+    - echo $IMAGE_TAG > image_tag.txt
+    - echo "Logging in to Amazon ECR..."
+    - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+  build:
+    commands:
+    - echo "Building frontend image..."
+    - docker build -f $DOCKERFILE_FRONTEND -t $FRONTEND_REPO:$IMAGE_TAG $CONTEXT_FRONTEND
+    - echo "Building backend image..."
+    - docker build -f $DOCKERFILE_BACKEND -t $BACKEND_REPO:$IMAGE_TAG $CONTEXT_BACKEND
+  post_build:
+    commands:
+    - echo "Pushing frontend image to ECR..."
+    - docker push $FRONTEND_REPO:$IMAGE_TAG
+    - echo "Pushing backend image to ECR..."
+    - docker push $BACKEND_REPO:$IMAGE_TAG
+    - echo "Tagging images as latest..."
+    - docker tag $FRONTEND_REPO:$IMAGE_TAG $FRONTEND_REPO:latest && docker push $FRONTEND_REPO:latest
+    - docker tag $BACKEND_REPO:$IMAGE_TAG $BACKEND_REPO:latest && docker push $BACKEND_REPO:latest
+    - printf '{"image_tag":"%s"}' "$IMAGE_TAG" > imagetags.json
+
+artifacts:
+  files:
+  - imagetags.json
+  - image_tag.txt
+  discard-paths: yes
