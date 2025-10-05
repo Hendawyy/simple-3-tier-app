@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm install
 
 # -------- Stage 2: Final image --------
-FROM node:18-slim
+FROM public.ecr.aws/docker/library/node:18-slim
 
 WORKDIR /app
 
