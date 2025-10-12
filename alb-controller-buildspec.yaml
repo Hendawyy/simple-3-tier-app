@@ -2,63 +2,53 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Installing kubectl and helm..."
-      # Install kubectl from AWS (most reliable for EKS)
-      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.2/2024-07-23/bin/linux/amd64/kubectl
-      - chmod +x ./kubectl
-      - mv ./kubectl /usr/local/bin/kubectl
-      - kubectl version --client --short
+      - echo "Installing tools..."
+      # Debug: Check what we're downloading
+      - echo "Downloading kubectl..."
+      - curl -LO "https://dl.k8s.io/release/v1.30.2/bin/linux/amd64/kubectl"  # Use specific version
+      - ls -la kubectl
+      - file kubectl
+      - chmod +x kubectl
+      - ./kubectl version --client
+      - mv kubectl /usr/local/bin/
       
       # Install helm
       - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
       - chmod 700 get_helm.sh
       - ./get_helm.sh
-      - helm version --short
       
   pre_build:
     commands:
-      - echo "Updating kubeconfig for cluster ${CLUSTER_NAME}"
+      - echo "Tools installed:"
+      - which kubectl
+      - kubectl version --client
+      - which helm
+      - helm version
+      
+      - echo "Updating kubeconfig..."
       - aws eks update-kubeconfig --region $REGION --name $CLUSTER_NAME
-      - echo "Verifying cluster access..."
+      - echo "Testing cluster access..."
       - kubectl get nodes
+      
   build:
     commands:
-      - echo "Adding EKS Helm repository..."
+      - echo "Setting up ALB Controller..."
       - helm repo add eks https://aws.github.io/eks-charts
       - helm repo update
-      - echo "Installing AWS Load Balancer Controller..."
       - |
-        # Check if already installed
-        if helm list -n aws-load-balancer-controller | grep -q aws-load-balancer-controller; then
-          echo "Upgrading existing ALB Controller..."
-          helm upgrade aws-load-balancer-controller eks/aws-load-balancer-controller \
-            -n aws-load-balancer-controller \
-            --set clusterName=$CLUSTER_NAME \
-            --set serviceAccount.create=true \
-            --set serviceAccount.name=aws-load-balancer-controller \
-            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$ALB_CONTROLLER_ROLE_ARN \
-            --set region=$REGION \
-            --set vpcId=$VPC_ID \
-            --wait
-        else
-          echo "Installing new ALB Controller..."
-          helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-            -n aws-load-balancer-controller \
-            --create-namespace \
-            --set clusterName=$CLUSTER_NAME \
-            --set serviceAccount.create=true \
-            --set serviceAccount.name=aws-load-balancer-controller \
-            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$ALB_CONTROLLER_ROLE_ARN \
-            --set region=$REGION \
-            --set vpcId=$VPC_ID \
-            --wait
-        fi
+        helm upgrade --install aws-load-balancer-controller \
+          eks/aws-load-balancer-controller \
+          -n aws-load-balancer-controller \
+          --create-namespace \
+          --set clusterName=$CLUSTER_NAME \
+          --set serviceAccount.create=true \
+          --set serviceAccount.name=aws-load-balancer-controller \
+          --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$ALB_CONTROLLER_ROLE_ARN \
+          --set region=$REGION \
+          --set vpcId=$VPC_ID \
+          --wait
+          
   post_build:
     commands:
-      - echo "Verifying ALB Controller installation..."
-      - kubectl get deployment -n aws-load-balancer-controller aws-load-balancer-controller
-      - echo "Checking ALB Controller pods..."
-      - kubectl get pods -n aws-load-balancer-controller
-      - echo "ALB Controller logs (last 10 lines):"
-      - kubectl logs -n aws-load-balancer-controller -l app.kubernetes.io/name=aws-load-balancer-controller --tail=10
-      - echo "ALB Controller installed successfully!"
+      - echo "Installation completed"
+      - kubectl get all -n aws-load-balancer-controller
