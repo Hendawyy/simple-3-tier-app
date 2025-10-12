@@ -3,12 +3,21 @@ phases:
   install:
     commands:
       - echo "Installing kubectl and helm..."
-      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.2/2024-07-23/bin/linux/amd64/kubectl
-      - chmod +x ./kubectl
-      - mv ./kubectl /usr/local/bin/kubectl
-      - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-      - chmod 700 get_helm.sh
-      - ./get_helm.sh
+      # Install kubectl using package manager (most reliable)
+      - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+      - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+      - apt-get update
+      - apt-get install -y kubectl
+      
+      # Install helm
+      - curl https://baltocdn.com/helm/signing.asc | apt-key add -
+      - echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+      - apt-get update
+      - apt-get install -y helm
+      
+      # Verify installations
+      - kubectl version --client --short
+      - helm version --short
   pre_build:
     commands:
       - echo "Updating kubeconfig for cluster ${CLUSTER_NAME}"
@@ -33,9 +42,6 @@ phases:
           --set region=$REGION \
           --set vpcId=$VPC_ID \
           --set image.repository=602401143452.dkr.ecr.$REGION.amazonaws.com/amazon/aws-load-balancer-controller \
-          --set enableShield=false \
-          --set enableWaf=false \
-          --set enableWafv2=false \
           --wait
   post_build:
     commands:
