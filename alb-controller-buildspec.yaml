@@ -1,0 +1,46 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo "Installing kubectl and helm..."
+      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.2/2024-07-23/bin/linux/amd64/kubectl
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin/kubectl
+      - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+      - chmod 700 get_helm.sh
+      - ./get_helm.sh
+  pre_build:
+    commands:
+      - echo "Updating kubeconfig for cluster ${CLUSTER_NAME}"
+      - aws eks update-kubeconfig --region $REGION --name $CLUSTER_NAME
+      - echo "Verifying cluster access..."
+      - kubectl get nodes
+  build:
+    commands:
+      - echo "Adding EKS Helm repository..."
+      - helm repo add eks https://aws.github.io/eks-charts
+      - helm repo update
+      - echo "Installing AWS Load Balancer Controller..."
+      - |
+        helm upgrade --install aws-load-balancer-controller \
+          eks/aws-load-balancer-controller \
+          -n aws-load-balancer-controller \
+          --create-namespace \
+          --set clusterName=$CLUSTER_NAME \
+          --set serviceAccount.create=true \
+          --set serviceAccount.name=aws-load-balancer-controller \
+          --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$ALB_CONTROLLER_ROLE_ARN \
+          --set region=$REGION \
+          --set vpcId=$VPC_ID \
+          --set image.repository=602401143452.dkr.ecr.$REGION.amazonaws.com/amazon/aws-load-balancer-controller \
+          --set enableShield=false \
+          --set enableWaf=false \
+          --set enableWafv2=false \
+          --wait
+  post_build:
+    commands:
+      - echo "Verifying ALB Controller installation..."
+      - kubectl get deployment -n aws-load-balancer-controller aws-load-balancer-controller
+      - echo "Checking ALB Controller pods..."
+      - kubectl get pods -n aws-load-balancer-controller
+      - echo "ALB Controller installed successfully!"
