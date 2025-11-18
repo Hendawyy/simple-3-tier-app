@@ -64,20 +64,24 @@
             transform: scale(1.05);
             }
         </style>
-    <script>
-        const backendUrl = "/api/increment";
-        async function updateCounter() {
-            try {
-                const response = await fetch(backendUrl);
-                const data = await response.json();
-                document.getElementById("counter").innerText = "Counter: " + data.counter;
-            } catch (error) {
-                console.error("Error fetching counter:", error);
+<script>
+    const backendUrl = "/api/increment";
+    async function updateCounter() {
+        try {
+            const response = await fetch(backendUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            const data = await response.json();
+            document.getElementById("counter").innerText = "Counter: " + data.counter;
+        } catch (error) {
+            console.error("Error fetching counter:", error);
+            document.getElementById("counter").innerText = "Counter: Error - check console";
         }
+    }
 
-        window.onload = updateCounter;
-    </script>
+    window.onload = updateCounter;
+</script>
 </head>
 
 <body>
