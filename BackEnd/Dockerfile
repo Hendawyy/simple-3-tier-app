@@ -12,9 +12,11 @@ FROM public.ecr.aws/docker/library/node:18-slim
 
 WORKDIR /app
 
-# Copy only what's needed
+# Copy package files and installed dependencies
+COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# Copy application code
 COPY . .
 
 ENV PORT=3000
