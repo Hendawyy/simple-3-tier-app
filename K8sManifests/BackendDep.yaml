@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: IMAGE_BACKEND
+        image: hendawyy/backend-efs:latest
         ports:
         - containerPort: 3000
         env:
@@ -31,6 +31,7 @@ spec:
             configMapKeyRef:
               name: backend-url
               key: MONGO_URI
+
 
 
 
