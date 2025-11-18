@@ -31,11 +31,6 @@ spec:
             configMapKeyRef:
               name: backend-url
               key: MONGO_URI
-        volumeMounts:
-        - name: backend-storage
-          mountPath: /app/data
-      volumes:
-      - name: backend-storage
-        persistentVolumeClaim:
-          claimName: my-ebs-pvc
+
+
 
