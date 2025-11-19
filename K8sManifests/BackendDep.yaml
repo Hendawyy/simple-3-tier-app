@@ -31,7 +31,10 @@ spec:
             configMapKeyRef:
               name: backend-url
               key: MONGO_URI
-        volumes:
+        volumeMounts: 
         - name: efs-storage
-          persistentVolumeClaim:
-            claimName: efs-pvc
+          mountPath: /app/data 
+      volumes: 
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: my-efs-pvc 
