@@ -6,7 +6,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -31,8 +31,7 @@ spec:
             configMapKeyRef:
               name: backend-url
               key: MONGO_URI
-
-
-
-
-
+        volumes:
+        - name: efs-storage
+          persistentVolumeClaim:
+            claimName: efs-pvc
