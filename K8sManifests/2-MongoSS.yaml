@@ -1,15 +1,18 @@
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+# First create dedicated PV for MongoDB
+apiVersion: v1
+kind: PersistentVolume
 metadata:
-  name: mongo-efs-sc
-provisioner: efs.csi.aws.com
-parameters:
-  provisioningMode: efs-ap
-  fileSystemId: fs-078df6759741c5dee
-  directoryPerms: "700"
-  gidRangeStart: "1000"
-  gidRangeEnd: "2000"
+  name: mongo-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-078df6759741c5dee
 ---
+# Dedicated PVC for MongoDB
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -20,9 +23,10 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: 1Gi
-  storageClassName: mongo-efs-sc
+      storage: 10Gi
+  volumeName: mongo-pv
 ---
+# StatefulSet using dedicated PVC
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -47,12 +51,7 @@ spec:
           volumeMounts:
             - mountPath: /data/db
               name: mongo-storage
-  volumeClaimTemplates:
-    - metadata:
-        name: mongo-storage
-      spec:
-        accessModes: ["ReadWriteMany"]
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: mongo-efs-sc
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc 
